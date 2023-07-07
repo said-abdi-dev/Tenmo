@@ -1,7 +1,7 @@
 package com.techelevator.tenmo;
 
-import com.techelevator.tenmo.model.AuthenticatedUser;
-import com.techelevator.tenmo.model.UserCredentials;
+import com.techelevator.tenmo.model.*;
+import com.techelevator.tenmo.services.TenmoService;
 import com.techelevator.tenmo.services.AuthenticationService;
 import com.techelevator.tenmo.services.ConsoleService;
 
@@ -24,6 +24,8 @@ public class App {
 
     private AuthenticatedUser currentUser;
 
+    private TenmoService tenmoService;
+
     public static void main(String[] args) {
         App app = new App();
         app.run();
@@ -34,6 +36,9 @@ public class App {
         loginMenu();
         if (currentUser != null) {
             // TODO: Instantiate services that require the current user to exist here
+            tenmoService = new TenmoService(API_BASE_URL, currentUser);
+
+
 
             mainMenu();
         }
@@ -97,13 +102,44 @@ public class App {
     }
 
 	private void viewCurrentBalance() {
-		// TODO Auto-generated method stub
-		
+        Account account = tenmoService.getAccountForUser();
+        consoleService.printBalance(account.getBalance());
 	}
 
 	private void viewTransferHistory() {
-		// TODO Auto-generated method stub
-		
+        int userAccountId = tenmoService.getAccountForUser().getAccount_id();
+		Transfer[] transfers = tenmoService.getTransferList();
+        consoleService.printListOfTransfersHeader();
+        for(Transfer transfer : transfers){
+            int id = transfer.getTransferId();
+            String toFrom = "To: ";
+            User otherUser = tenmoService.getUserFromAccountId(transfer.getAccountTo());
+            if(transfer.getAccountTo() == userAccountId){
+                toFrom = "From: ";
+                otherUser = tenmoService.getUserFromAccountId(transfer.getAccountFrom());
+            }
+            String name = otherUser.getUsername();
+            double amount = transfer.getAmount();
+            consoleService.printATransfer(id, toFrom, name, amount);
+        }
+
+        int transferId = consoleService.askForTransferId(transfers);
+        Transfer transfer = tenmoService.getTransferFromTransferId(transferId);
+        int id = transfer.getTransferId();
+        String from = tenmoService.getUserFromAccountId(transfer.getAccountFrom()).getUsername();
+        String to = tenmoService.getUserFromAccountId(transfer.getAccountTo()).getUsername();
+        String type = "Request";
+        if(transfer.getTransferTypeId() == 2){
+            type = "Send";
+        }
+        String status  = "Pending";
+        if(transfer.getTransferStatusId() == 2){
+            status = "Approved";
+        } else if (transfer.getTransferStatusId() == 3) {
+            status = "Rejected";
+        }
+        double amount = transfer.getAmount();
+        consoleService.printTransferDetails(id, from, to, status, type, amount);
 	}
 
 	private void viewPendingRequests() {
@@ -112,7 +148,24 @@ public class App {
 	}
 
 	private void sendBucks() {
-		// TODO Auto-generated method stub
+        int transferToId = consoleService.printListOfOtherUsers(tenmoService.getNoneUserUsers());
+        if(transferToId != 0){
+            transferToId = tenmoService.getAccountFromUserId(transferToId).getAccount_id();
+            double amount = 0;
+            while(true) {
+                amount = consoleService.promptForBigDecimal("Enter the amount you would like to send: ").doubleValue();
+                if(amount > 0 && amount <= tenmoService.getAccountForUser().getBalance()){
+                    break;
+                }
+                System.out.println("Amount must be greater than 0 and no more than your current balance");
+            }
+            int transferFromId = tenmoService.getAccountForUser().getAccount_id();
+            int transferType = 2;
+            int transferStatus = 2;
+            Transfer transfer = new Transfer(0,transferType, transferStatus, transferToId, transferFromId, amount);
+            tenmoService.addTransfer(transfer);
+
+        }
 		
 	}
 

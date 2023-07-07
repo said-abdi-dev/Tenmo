@@ -1,0 +1,5 @@
+2023-07-07T12:21:19.9147601 401 : [no body]
+2023-07-07T12:48:25.4337063 401 : [no body]
+2023-07-07T12:48:30.6604494 401 : [no body]
+2023-07-07T12:48:35.2305145 400 : [{"timestamp":"2023-07-07T16:48:35.216+00:00","status":400,"error":"Bad Request","message":"Validation failed for object='registerUserDto'. Error count: 2","errors":[{"codes":["NotEmpty.registerUserDto... (947 bytes)]
+2023-07-07T15:40:15.4595616 401 : [no body]

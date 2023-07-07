@@ -1,5 +1,6 @@
 package com.techelevator.tenmo.dao;
 
+import com.techelevator.tenmo.model.Account;
 import com.techelevator.tenmo.model.User;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -42,6 +43,17 @@ public class JdbcUserDao implements UserDao {
         String sql = "SELECT user_id, username, password_hash FROM tenmo_user WHERE user_id = ?";
         SqlRowSet results = jdbcTemplate.queryForRowSet(sql, userId);
         if (results.next()) {
+            return mapRowToUser(results);
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public User findUserByAccountId(int accountId) {
+        String sql = "SELECT username, user_id, password_hash  FROM tenmo_user WHERE user_id IN (SELECT user_id FROM account WHERE account_id = ?)";
+        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, accountId);
+        if(results.next()){
             return mapRowToUser(results);
         } else {
             return null;
@@ -94,6 +106,17 @@ public class JdbcUserDao implements UserDao {
         }
 
         return true;
+    }
+
+    @Override
+    public List<User> getUsersOtherThanSelf(int userId) {
+        List<User> userList = new ArrayList<>();
+        String sql = "SELECT user_id, username, password_hash FROM tenmo_user WHERE user_id != ?";
+        SqlRowSet result = jdbcTemplate.queryForRowSet(sql, userId);
+        while(result.next()){
+            userList.add(mapRowToUser(result));
+        }
+        return userList;
     }
 
     private User mapRowToUser(SqlRowSet rs) {
